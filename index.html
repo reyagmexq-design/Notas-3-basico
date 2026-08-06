@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INEB Telesecundaria Estanzuela - Sistema de Calificaciones</title>
+
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #2563eb;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --border: #334155;
+            --accent-orange: #f97316;
+            --accent-orange-hover: #ea580c;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 10px;
+        }
+
+        /* Pantalla de Carga Inicial */
+        #pantalla-carga {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+            box-sizing: border-box;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        #pantalla-carga h1 {
+            color: #1e3a8a;
+            font-size: 1.4rem;
+            margin: 0 0 10px 0;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        #pantalla-carga h2 {
+            color: #475569;
+            font-size: 1.1rem;
+            font-weight: normal;
+            margin: 0 0 25px 0;
+            text-align: center;
+        }
+
+        .btn-entrar {
+            background-color: var(--accent-orange);
+            color: white;
+            border: none;
+            padding: 12px 36px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Opciones de Grados en la Pantalla de Carga */
+        .contenedor-grados {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 280px;
+            margin-top: 15px;
+        }
+
+        .btn-grado-inicio {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-grado-inicio:hover {
+            background-color: var(--primary-light);
+        }
+
+        /* Header con botón de 3 rayitas */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--primary);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .menu-btn {
+            font-size: 1.5rem;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .top-title {
+            font-size: 0.95rem;
+            font-weight: bold;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        /* Menú Lateral (Drawer) */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -260px;
+            width: 250px;
+            height: 100%;
+            background-color: #1e293b;
+            color: white;
+            z-index: 10000;
+            transition: left 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+            padding-top: 20px;
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .sidebar h3 {
+            color: #f8fafc;
+            border-bottom: 1px solid #475569;
+            padding-bottom: 10px;
+            margin: 0 15px 15px 15px;
+            text-align: left;
+        }
+
+        .sidebar-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            display: block;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-bottom: 1px solid #334155;
+        }
+
+        .sidebar-item:hover, .sidebar-item.selected {
+            background-color: var(--primary-light);
+            color: white;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        /* Contenido Principal */
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+        }
+
+        .grado-badge {
+            background-color: var(--accent-orange);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            display: inline-block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border: 1px solid #cbd5e1;
+            background-color: #e2e8f0;
+            color: #1e293b;
+            cursor: pointer;
+            border-radius: 6px;
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .tab-btn.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .panel {
+            display: none;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        h2, h3, h4 {
+            color: #0f172a;
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .search-box, .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #94a3b8;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.9rem;
+        }
+
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        button.btn-primary {
+            background-color: var(--primary-light);
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .tarjeta-reporte {
+            border: 2px solid #000;
+            background-color: #fff;
+            padding: 10px;
+            margin-top: 15px;
+            font-family: 'Arial Narrow', Arial, sans-serif;
+        }
+
+        .nota-header-box {
+            border: 1.5px solid #000;
+            border-radius: 12px;
+            padding: 8px;
+            font-size: 0.78rem;
+            text-align: justify;
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+
+        .tabla-oficial {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+
+        .tabla-oficial th, .tabla-oficial td {
+            border: 1.5px solid #000;
+            padding: 5px 6px;
+            text-align: center;
+        }
+
+        .tabla-oficial th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+            color: #000;
+            text-transform: uppercase;
+        }
+
+        .tabla-oficial td.col-materia {
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .sub-table {
+            width: 100%;
+            font-size: 0.75rem;
+            border-collapse: collapse;
+            margin-top: 3px;
+        }
+
+        .sub-table td {
+            border: 1px solid #cbd5e1;
+            padding: 2px 4px;
+        }
+
+        .col-destacada {
+            font-weight: bold;
+            background-color: #f8fafc;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Pantalla de Carga Inicial -->
+<div id="pantalla-carga">
+    <h1>INEB TELESECUNDARIA ALDEA ESTANZUELA</h1>
+    <h2>Sistema de Notas</h2>
+    
+    <button id="btnEntrarInicio" class="btn-entrar" onclick="mostrarGrados()">Entrar</button>
+
+    <!-- Opciones que aparecen tras presionar Entrar -->
+    <div id="contenedorGrados" class="contenedor-grados">
+        <p style="text-align: center; margin: 0 0 5px 0; font-size: 0.9rem; font-weight: bold; color: #334155;">Selecciona tu Grado:</p>
+        <button class="btn-grado-inicio" onclick="autenticarGrado('1basico')">1.º Básico</button>
+        <button class="btn-grado-inicio" onclick="autenticarGrado('2basico')">2.º Básico</button>
+        <button class="btn-grado-inicio" onclick="autenticarGrado('3basico')">3.º Básico</button>
+    </div>
+</div>
+
+<!-- Menú Lateral Desplegable -->
+<div id="sidebar" class="sidebar">
+    <h3>Seleccionar Grado</h3>
+    <div class="sidebar-item" id="item-1basico" onclick="autenticarGrado('1basico')">1.º Básico</div>
+    <div class="sidebar-item" id="item-2basico" onclick="autenticarGrado('2basico')">2.º Básico</div>
+    <div class="sidebar-item" id="item-3basico" onclick="autenticarGrado('3basico')">3.º Básico</div>
+</div>
+<div id="overlay" class="overlay" onclick="cerrarMenu()"></div>
+
+<div class="container">
+    <!-- Encabezado con 3 rayitas -->
+    <div class="top-bar">
+        <button class="menu-btn" onclick="abrirMenu()">&#9776;</button>
+        <div class="top-title">INEB TELESECUNDARIA ESTANZUELA</div>
+    </div>
+
+    <div style="text-align: center;">
+        <span id="badgeGrado" class="grado-badge">Grado: 1.º Básico</span>
+    </div>
+
+    <!-- Pestañas de Navegación -->
+    <div class="nav-tabs">
+        <button class="tab-btn active" id="btnPuntos" onclick="cambiarVista('desglose')">1. Desglose de Puntos</button>
+        <button class="tab-btn" id="btnBoletin" onclick="cambiarVista('boletin')">2. Boletín Oficial de Notas</button>
+        <button class="tab-btn" id="btnProfesor" onclick="cambiarVista('profesor')">Panel Profesor 🔒</button>
+    </div>
+
+    <!-- 1. OPCIÓN DESGLOSE DE PUNTOS -->
+    <div id="vista-desglose" class="panel active">
+        <h3>Consulta: Desglose de Puntos por Actividad</h3>
+        <div class="search-box">
+            <label for="buscarNombreDesglose">Escribe tu Nombre Completo:</label>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="buscarNombreDesglose" placeholder="Ej. Juan Pérez">
+                <button class="btn-primary" style="width: auto;" onclick="consultarDesglose()">Consultar</button>
+            </div>
+        </div>
+        <div id="resultadoDesglose"></div>
+    </div>
+
+    <!-- 2. OPCIÓN BOLETÍN OFICIAL -->
+    <div id="vista-boletin" class="panel">
+        <h3>Consulta: Reporte de Notas Bimestrales</h3>
+        <div class="search-box">
+            <label for="buscarNombreBoletin">Escribe tu Nombre Completo:</label>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="buscarNombreBoletin" placeholder="Ej. Juan Pérez">
+                <button class="btn-primary" style="width: auto;" onclick="consultarBoletin()">Ver Boletín</button>
+            </div>
+        </div>
+        <div id="resultadoBoletin"></div>
+    </div>
+
+    <!-- 3. PANEL DEL PROFESOR -->
+    <div id="vista-profesor" class="panel">
+        <h3>Ingreso de Notas (Docentes)</h3>
+        <form id="formProfesor" onsubmit="guardarNotas(event)">
+            <div class="form-group">
+                <label for="profGrado">Grado de Destino:</label>
+                <select id="profGrado" required>
+                    <option value="1basico">1.º Básico</option>
+                    <option value="2basico">2.º Básico</option>
+                    <option value="3basico">3.º Básico</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="profNombre">Nombre Completo del Estudiante:</label>
+                <input type="text" id="profNombre" required placeholder="Ej. Juan Pérez">
+            </div>
+
+            <div class="grid-inputs">
+                <div>
+                    <label for="profMateria">Asignatura / Materia:</label>
+                    <select id="profMateria" required></select>
+                </div>
+                <div>
+                    <label for="profBimestre">Bimestre:</label>
+                    <select id="profBimestre" required>
+                        <option value="b1">Primer Bimestre</option>
+                        <option value="b2">Segundo Bimestre</option>
+                        <option value="b3">Tercer Bimestre</option>
+                        <option value="b4">Cuarto Bimestre</option>
+                    </select>
+                </div>
+            </div>
+
+            <label>Tipo de Registro:</label>
+            <div class="radio-group">
+                <label style="font-weight:normal; cursor:pointer;">
+                    <input type="radio" name="tipoIngreso" value="boletin" checked onclick="toggleModoIngreso()"> Nota Directa (Para Boletín)
+                </label>
+                <label style="font-weight:normal; cursor:pointer;">
+                    <input type="radio" name="tipoIngreso" value="desglose" onclick="toggleModoIngreso()"> Desglose por Rubros
+                </label>
+            </div>
+
+            <div id="modoBoletin" class="form-group">
+                <label for="pNotaDirecta">Nota Final del Bimestre (0 a 100):</label>
+                <input type="number" id="pNotaDirecta" min="0" max="100" step="0.1" value="0">
+            </div>
+
+            <div id="modoDesglose" style="display:none;">
+                <h4 style="text-align:left; border-bottom:1px solid #ccc; padding-bottom:5px;">Rubros de Evaluación</h4>
+                <div class="grid-inputs">
+                    <div>
+                        <label for="pTareas">Puntos por Tarea:</label>
+                        <input type="number" id="pTareas" min="0" max="100" step="0.1" value="0">
+                    </div>
+                    <div>
+                        <label for="pParcial">Laboratorio / Parcial:</label>
+                        <input type="number" id="pParcial" min="0" max="100" step="0.1" value="0">
+                    </div>
+                    <div>
+                        <label for="pExposicion">Puntos por Exposición:</label>
+                        <input type="number" id="pExposicion" min="0" max="100" step="0.1" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary">Guardar Calificación</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    let gradoActual = '1basico';
+
+    // Nombre de docentes por grado para la pantalla inicial
+    const DOCENTES = {
+        '1basico': 'Elsa Noelia Ruiz',
+        '2basico': 'Ana Mariela Campos',
+        '3basico': 'Victor Osiel Mazariegos'
+    };
+
+    // Contraseña única general para acceder al Panel del Profesor
+    const CLAVE_PROFESOR_GENERAL = "Ineb Telesecundaria Estanzuela";
+
+    const LISTA_MATERIAS = [
+        "Matemáticas",
+        "Culturas e idiomas Garífunas o Xinka",
+        "Comunicación y Lenguaje Idioma Español",
+        "Comunicación y Lenguaje Idioma Extranjero",
+        "Ciencias Naturales",
+        "Ciencias Sociales, Formación Ciudadana E Interculturalidad",
+        "Educación Musical",
+        "Artes Visuales",
+        "Teatro",
+        "Danza",
+        "Emprendimiento para la Productividad",
+        "Tecnologías del Aprendizaje y la Comunicación",
+        "Educación Física"
+    ];
+
+    const BIMESTRES = ["b1", "b2", "b3", "b4"];
+
+    // Carga de materias en el menú desplegable
+    const selectMateria = document.getElementById('profMateria');
+    LISTA_MATERIAS.forEach(mat => {
+        const option = document.createElement('option');
+        option.value = mat;
+        option.textContent = mat;
+        selectMateria.appendChild(option);
+    });
+
+    function mostrarGrados() {
+        document.getElementById('btnEntrarInicio').style.display = 'none';
+        document.getElementById('contenedorGrados').style.display = 'flex';
+    }
+
+    // Acceso inicial / Selección de grado (usa nombre del profesor)
+    function autenticarGrado(grado) {
+        const docenteRequerido = DOCENTES[grado];
+        const claveIngresada = prompt(`Ingrese el nombre del profesor para acceder a ${obtenerNombreGrado(grado)}:`);
+
+        if (!claveIngresada) return;
+
+        if (claveIngresada.trim().toLowerCase() === docenteRequerido.toLowerCase()) {
+            seleccionarGrado(grado);
+            ocultarPantallaCarga();
+        } else {
+            alert("Contraseña/Nombre de profesor incorrecto. Acceso denegado.");
+        }
+    }
+
+    function ocultarPantallaCarga() {
+        const pantallaCarga = document.getElementById('pantalla-carga');
+        pantallaCarga.style.opacity = '0';
+        pantallaCarga.style.visibility = 'hidden';
+    }
+
+    function obtenerNombreGrado(grado) {
+        if (grado === '1basico') return '1.º Básico';
+        if (grado === '2basico') return '2.º Básico';
+        return '3.º Básico';
+    }
+
+    function abrirMenu() {
+        document.getElementById('sidebar').classList.add('open');
+        document.getElementById('overlay').classList.add('active');
+    }
+
+    function cerrarMenu() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('overlay').classList.remove('active');
+    }
+
+    function seleccionarGrado(grado) {
+        gradoActual = grado;
+        document.getElementById('badgeGrado').textContent = 'Grado: ' + obtenerNombreGrado(grado);
+        document.getElementById('profGrado').value = grado;
+
+        document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('selected'));
+        const itemSeleccionado = document.getElementById('item-' + grado);
+        if (itemSeleccionado) itemSeleccionado.classList.add('selected');
+
+        document.getElementById('resultadoDesglose').innerHTML = '';
+        document.getElementById('resultadoBoletin').innerHTML = '';
+
+        cerrarMenu();
+    }
+
+    function cambiarVista(vista) {
+        if (vista === 'profesor') {
+            const clave = prompt("Ingrese la contraseña del Panel del Profesor:");
+            if (!clave || clave.trim().toLowerCase() !== CLAVE_PROFESOR_GENERAL.toLowerCase()) {
+                alert("Contraseña incorrecta. Acceso denegado al Panel del Profesor.");
+                return;
+            }
+        }
+
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+        if (vista === 'desglose') {
+            document.getElementById('vista-desglose').classList.add('active');
+            document.getElementById('btnPuntos').classList.add('active');
+        } else if (vista === 'boletin') {
+            document.getElementById('vista-boletin').classList.add('active');
+            document.getElementById('btnBoletin').classList.add('active');
+        } else {
+            document.getElementById('vista-profesor').classList.add('active');
+            document.getElementById('btnProfesor').classList.add('active');
+        }
+    }
+
+    function toggleModoIngreso() {
+        const modo = document.querySelector('input[name="tipoIngreso"]:checked').value;
+        if (modo === 'boletin') {
+            document.getElementById('modoBoletin').style.display = 'block';
+            document.getElementById('modoDesglose').style.display = 'none';
+        } else {
+            document.getElementById('modoBoletin').style.display = 'none';
+            document.getElementById('modoDesglose').style.display = 'block';
+        }
+    }
+
+    function obtenerBD() {
+        return JSON.parse(localStorage.getItem('bd_telesecundaria_v2')) || {
+            '1basico': {},
+            '2basico': {},
+            '3basico': {}
+        };
+    }
+
+    function guardarBD(datos) {
+        localStorage.setItem('bd_telesecundaria_v2', JSON.stringify(datos));
+    }
+
+    function guardarNotas(e) {
+        e.preventDefault();
+        const grado = document.getElementById('profGrado').value;
+        const nombre = document.getElementById('profNombre').value.trim().toLowerCase();
+        const materia = document.getElementById('profMateria').value;
+        const bimestre = document.getElementById('profBimestre').value;
+        const modo = document.querySelector('input[name="tipoIngreso"]:checked').value;
+
+        let bd = obtenerBD();
+        if (!bd[grado]) bd[grado] = {};
+        if (!bd[grado][nombre]) bd[grado][nombre] = {};
+        if (!bd[grado][nombre][materia]) bd[grado][nombre][materia] = {};
+
+        if (modo === 'boletin') {
+            const notaDirecta = parseFloat(document.getElementById('pNotaDirecta').value) || 0;
+            bd[grado][nombre][materia][bimestre] = {
+                tareas: 0,
+                parcial: 0,
+                exposicion: 0,
+                total: notaDirecta
+            };
+        } else {
+            const tareas = parseFloat(document.getElementById('pTareas').value) || 0;
+            const parcial = parseFloat(document.getElementById('pParcial').value) || 0;
+            const exposicion = parseFloat(document.getElementById('pExposicion').value) || 0;
+            bd[grado][nombre][materia][bimestre] = {
+                tareas,
+                parcial,
+                exposicion,
+                total: tareas + parcial + exposicion
+            };
+        }
+
+        guardarBD(bd);
+        alert('Nota guardada correctamente para ' + document.getElementById('profNombre').value);
+        document.getElementById('formProfesor').reset();
+        document.getElementById('profGrado').value = gradoActual;
+        toggleModoIngreso();
+    }
+
+    function consultarDesglose() {
+        const nombre = document.getElementById('buscarNombreDesglose').value.trim().toLowerCase();
+        const cont = document.getElementById('resultadoDesglose');
+        const bd = obtenerBD();
+
+        if (!nombre || !bd[gradoActual] || !bd[gradoActual][nombre]) {
+            cont.innerHTML = '<p style="color:red; font-weight:bold;">No hay registros para este estudiante en el grado seleccionado.</p>';
+            return;
+        }
+
+        let html = `<h4 style="text-align:left;">Desglose de Tareas, Parciales y Exposiciones</h4><div style="overflow-x:auto;"><table class="tabla-oficial"><thead><tr><th>ASIGNATURAS</th><th>Primer Bimestre</th><th>Segundo Bimestre</th><th>Tercer Bimestre</th><th>Cuarto Bimestre</th></tr></thead><tbody>`;
+
+        LISTA_MATERIAS.forEach(mat => {
+            html += `<tr><td class="col-materia">${mat}</td>`;
+            BIMESTRES.forEach(bim => {
+                const info = bd[gradoActual][nombre][mat] ? bd[gradoActual][nombre][mat][bim] : null;
+                if (info) {
+                    html += `<td>
+                        <strong>Total: ${info.total.toFixed(1)}</strong>
+                        <table class="sub-table">
+                            <tr><td>Tareas</td><td>${info.tareas}</td></tr>
+                            <tr><td>Lab/Parcial</td><td>${info.parcial}</td></tr>
+                            <tr><th>Expo</th><td>${info.exposicion}</td></tr>
+                        </table>
+                    </td>`;
+                } else {
+                    html += `<td>-</td>`;
+                }
+            });
+            html += `</tr>`;
+        });
+
+        html += `</tbody></table></div>`;
+        cont.innerHTML = html;
+    }
+
+    function consultarBoletin() {
+        const nombreOriginal = document.getElementById('buscarNombreBoletin').value.trim();
+        const nombreKey = nombreOriginal.toLowerCase();
+        const cont = document.getElementById('resultadoBoletin');
+        const bd = obtenerBD();
+
+        if (!nombreKey || !bd[gradoActual] || !bd[gradoActual][nombreKey]) {
+            cont.innerHTML = '<p style="color:red; font-weight:bold;">No se encontraron calificaciones registradas para este estudiante en el grado seleccionado.</p>';
+            return;
+        }
+
+        let html = `
+        <div class="tarjeta-reporte">
+            <div class="nota-header-box">
+                <strong>Padres de Familia:</strong> Este es un reporte que resume en nota numérica, los resultados obtenidos por su hijo (a) en su desempeño escolar. Se le solicita leer cuidadosamente este informe y devolverlo al Docente de Grado el día indicado. <strong>NOTA: Las asignaturas son APROBADAS de 60 a 100 puntos y son REPROBADAS de 0 a 59 puntos.</strong>
+            </div>
+            
+            <p style="margin: 5px 0; font-weight:bold; font-size:0.9rem;">Alumno(a): <span style="text-transform:uppercase;">${nombreOriginal}</span></p>
+
+            <table class="tabla-oficial">
+                <thead>
+                    <tr>
+                        <th style="width: 45%;">ASIGNATURAS</th>
+                        <th>Primer Bimestre</th>
+                        <th>Segundo Bimestre</th>
+                        <th>Tercer Bimestre</th>
+                        <th>Cuarto Bimestre</th>
+                        <th>NOTA FINAL</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        LISTA_MATERIAS.forEach(mat => {
+            let suma = 0;
+            let conteo = 0;
+            html += `<tr><td class="col-materia">${mat}</td>`;
+
+            BIMESTRES.forEach(bim => {
+                const info = bd[gradoActual][nombreKey][mat] ? bd[gradoActual][nombreKey][mat][bim] : null;
+                if (info) {
+                    suma += info.total;
+                    conteo++;
+                    html += `<td>${info.total.toFixed(0)}</td>`;
+                } else {
+                    html += `<td></td>`;
+                }
+            });
+
+            const notaFinal = conteo > 0 ? (suma / conteo).toFixed(0) : '';
+            html += `<td class="col-destacada">${notaFinal}</td></tr>`;
+        });
+
+        html += `</tbody></table></div>`;
+        cont.innerHTML = html;
+    }
+</script>
+
+</body>
+</html>
